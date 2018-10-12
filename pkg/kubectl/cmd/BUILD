@@ -38,6 +38,7 @@ go_library(
         "//pkg/kubectl/cmd/explain:go_default_library",
         "//pkg/kubectl/cmd/expose:go_default_library",
         "//pkg/kubectl/cmd/get:go_default_library",
+        "//pkg/kubectl/cmd/kustomize/k8sdeps:go_default_library",
         "//pkg/kubectl/cmd/label:go_default_library",
         "//pkg/kubectl/cmd/logs:go_default_library",
         "//pkg/kubectl/cmd/options:go_default_library",
@@ -63,6 +64,7 @@ go_library(
         "//staging/src/k8s.io/client-go/tools/clientcmd:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
+        "//vendor/sigs.k8s.io/kustomize/pkg/commands:go_default_library",
     ],
 )
 
@@ -126,6 +128,7 @@ filegroup(
         "//pkg/kubectl/cmd/expose:all-srcs",
         "//pkg/kubectl/cmd/get:all-srcs",
         "//pkg/kubectl/cmd/help:all-srcs",
+        "//pkg/kubectl/cmd/kustomize/k8sdeps:all-srcs",
         "//pkg/kubectl/cmd/label:all-srcs",
         "//pkg/kubectl/cmd/logs:all-srcs",
         "//pkg/kubectl/cmd/options:all-srcs",

@@ -1,0 +1,6 @@
+nameprefix: test-
+
+resources:
+- deployment.yaml
+- service.yaml
+- configMap.yaml

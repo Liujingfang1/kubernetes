@@ -374,6 +374,67 @@ func writeTestFile(t *testing.T, path string, contents string) {
 	}
 }
 
+func TestFilenameOptionsValidate(t *testing.T) {
+	testcases := []struct {
+		filenames []string
+		kustomize []string
+		recursive bool
+		errExp    bool
+		msgExp    string
+	}{
+		{
+			filenames: []string{"file"},
+			kustomize: []string{"dir"},
+			errExp:    true,
+			msgExp:    "only one of -f or -k can be specified",
+		},
+		{
+			kustomize: []string{"dir1", "dir2"},
+			errExp:    true,
+			msgExp:    "only one directory can be specified with -k",
+		},
+		{
+			kustomize: []string{"dir"},
+			recursive: true,
+			errExp:    true,
+			msgExp:    "-R is not allowed to work with -k",
+		},
+		{
+			filenames: []string{"file"},
+			errExp:    false,
+		},
+		{
+			filenames: []string{"dir"},
+			recursive: true,
+			errExp:    false,
+		},
+		{
+			kustomize: []string{"dir"},
+			errExp:    false,
+		},
+	}
+	for _, testcase := range testcases {
+		o := &FilenameOptions{
+			Kustomize: testcase.kustomize,
+			Filenames: testcase.filenames,
+			Recursive: testcase.recursive,
+		}
+		err := o.Validate()
+		if testcase.errExp {
+			if err == nil {
+				t.Fatalf("expected error not happened")
+			}
+			if err.Error() != testcase.msgExp {
+				t.Fatalf("expected %s, but got %#v", testcase.msgExp, err)
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("Unexpected error %#v", err)
+			}
+		}
+	}
+}
+
 func TestPathBuilderWithMultiple(t *testing.T) {
 	// create test dirs
 	tmpDir, err := utiltesting.MkTmpdir("recursive_test_multiple")
@@ -510,6 +571,70 @@ func TestDirectoryBuilder(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("unexpected responses: %#v", test.Infos)
+	}
+}
+
+func TestKustomizeDirectoryBuilder(t *testing.T) {
+	tests := []struct {
+		directories   []string
+		expectErr     bool
+		errMsg        string
+		number        int
+		expectedNames []string
+	}{
+		{
+			directories: []string{"../../../artifacts/guestbook"},
+			expectErr:   true,
+			errMsg:      "No kustomization file found",
+		},
+		{
+			directories:   []string{"../../../artifacts/kustomization"},
+			expectErr:     false,
+			number:        3,
+			expectedNames: []string{"test-the-deployment", "test-the-map", "test-the-service"},
+		},
+		{
+			directories: []string{"../../../artifacts/kustomization/should-not-load.yaml"},
+			expectErr:   true,
+			errMsg:      "must be a directory to be a root",
+		},
+	}
+	for _, tt := range tests {
+		b := newDefaultBuilder().
+			FilenameParam(false, &FilenameOptions{Kustomize: tt.directories}).
+			NamespaceParam("test").DefaultNamespace()
+		test := &testVisitor{}
+		err := b.Do().Visit(test.Handle)
+		if tt.expectErr {
+			if err == nil {
+				t.Fatalf("expected error unhappened")
+			}
+			if !strings.Contains(err.Error(), tt.errMsg) {
+				t.Fatalf("expected %s but got %s", tt.errMsg, err.Error())
+			}
+		} else {
+			if err != nil || len(test.Infos) < tt.number {
+				t.Fatalf("unexpected response: %v %#v", err, test.Infos)
+			}
+			contained := func(name string) bool {
+				for _, info := range test.Infos {
+					if info.Name == name && info.Namespace == "test" && info.Object != nil {
+						return true
+					}
+				}
+				return false
+			}
+
+			allFound := true
+			for _, name := range tt.expectedNames {
+				if !contained(name) {
+					allFound = false
+				}
+			}
+			if !allFound {
+				t.Errorf("unexpected responses: %#v", test.Infos)
+			}
+		}
 	}
 }
 

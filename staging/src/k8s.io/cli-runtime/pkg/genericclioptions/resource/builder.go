@@ -130,7 +130,25 @@ func IsUsageError(err error) bool {
 
 type FilenameOptions struct {
 	Filenames []string
+	Kustomize []string
 	Recursive bool
+}
+
+func (o *FilenameOptions) Validate() error {
+	if len(o.Filenames) > 0 && len(o.Kustomize) > 0 {
+		return fmt.Errorf("only one of -f or -k can be specified")
+	}
+	if len(o.Kustomize) > 0 && o.Recursive {
+		return fmt.Errorf("-R is not allowed to work with -k")
+	}
+	if len(o.Kustomize) > 1 {
+		return fmt.Errorf("only one directory can be specified with -k")
+	}
+	return nil
+}
+
+func (o *FilenameOptions) IsSourceEmpty() bool {
+	return len(o.Filenames) == 0 && len(o.Kustomize) == 0
 }
 
 type resourceTuple struct {
@@ -214,6 +232,9 @@ func (b *Builder) FilenameParam(enforceNamespace bool, filenameOptions *Filename
 			}
 			b.Path(recursive, s)
 		}
+	}
+	for _, k := range filenameOptions.Kustomize {
+		b.paths = append(b.paths, &KustomizeVisitor{k, NewStreamVisitor(nil, b.mapper, k, b.schema)})
 	}
 
 	if enforceNamespace {

@@ -156,9 +156,10 @@ func NewDeleteCommandFlags(usage string) *DeleteFlags {
 
 	filenames := []string{}
 	recursive := false
+	kustomize := []string{}
 
 	return &DeleteFlags{
-		FileNameFlags: &genericclioptions.FileNameFlags{Usage: usage, Filenames: &filenames, Recursive: &recursive},
+		FileNameFlags: &genericclioptions.FileNameFlags{Usage: usage, Filenames: &filenames, Kustomize: &kustomize, Recursive: &recursive},
 		LabelSelector: &labelSelector,
 		FieldSelector: &fieldSelector,
 
@@ -186,10 +187,11 @@ func NewDeleteFlags(usage string) *DeleteFlags {
 	wait := false
 
 	filenames := []string{}
+	kustomize := []string{}
 	recursive := false
 
 	return &DeleteFlags{
-		FileNameFlags: &genericclioptions.FileNameFlags{Usage: usage, Filenames: &filenames, Recursive: &recursive},
+		FileNameFlags: &genericclioptions.FileNameFlags{Usage: usage, Filenames: &filenames, Kustomize: &kustomize, Recursive: &recursive},
 
 		Cascade:     &cascade,
 		GracePeriod: &gracePeriod,

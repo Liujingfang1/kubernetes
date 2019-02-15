@@ -1414,3 +1414,57 @@ func TestDryRunVerifierNoOpenAPI(t *testing.T) {
 		t.Fatalf("MyCRD doesn't support dry-run, yet no error found")
 	}
 }
+
+func TestApplyKustomizeDirectory(t *testing.T) {
+	testcases := []struct {
+		filenames []string
+		kustomize []string
+		recursive bool
+		err       bool
+		msg       string
+	}{
+		{
+			filenames: []string{"file"},
+			kustomize: []string{"dir"},
+			err:       true,
+			msg:       "only one of -f or -k can be specified",
+		},
+		{
+			kustomize: []string{"dir1", "dir2"},
+			err:       true,
+			msg:       "only one directory can be specified with -k",
+		},
+		{
+			kustomize: []string{"dir"},
+			recursive: true,
+			err:       true,
+			msg:       "-R is not allowed to work with -k",
+		},
+		{
+			err: true,
+			msg: "must specify one of -f and -k",
+		},
+	}
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
+	defer tf.Cleanup()
+
+	cmd := NewCmdApply("kubectl", tf, genericclioptions.NewTestIOStreamsDiscard())
+	o := NewApplyOptions(genericclioptions.NewTestIOStreamsDiscard())
+	for _, testcase := range testcases {
+		o.DeleteFlags.FileNameFlags = &genericclioptions.FileNameFlags{
+			Filenames: &testcase.filenames,
+			Kustomize: &testcase.kustomize,
+			Recursive: &testcase.recursive,
+		}
+		err := o.Complete(tf, cmd)
+		if testcase.err {
+			if err == nil {
+				t.Fatalf("expected error unhappend")
+			}
+			if err.Error() != testcase.msg {
+				t.Fatalf("expected %s but got %s", testcase.msg, err.Error())
+			}
+		}
+
+	}
+}

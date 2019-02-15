@@ -115,6 +115,9 @@ var (
 		# Apply the configuration in pod.json to a pod.
 		kubectl apply -f ./pod.json
 
+        # Apply resources from a directory containing kustomization.yaml
+        kubectl apply -k dir
+
 		# Apply the JSON passed into stdin to a pod.
 		cat pod.json | kubectl apply -f -
 
@@ -170,7 +173,6 @@ func NewCmdApply(baseName string, f cmdutil.Factory, ioStreams genericclioptions
 	o.RecordFlags.AddFlags(cmd)
 	o.PrintFlags.AddFlags(cmd)
 
-	cmd.MarkFlagRequired("filename")
 	cmd.Flags().BoolVar(&o.Overwrite, "overwrite", o.Overwrite, "Automatically resolve conflicts between the modified and live configuration by using values from the modified configuration")
 	cmd.Flags().BoolVar(&o.Prune, "prune", o.Prune, "Automatically delete resource objects, including the uninitialized ones, that do not appear in the configs and are created by either apply or create --save-config. Should be used with either -l or --all.")
 	cmdutil.AddValidateFlags(cmd)
@@ -237,6 +239,12 @@ func (o *ApplyOptions) Complete(f cmdutil.Factory, cmd *cobra.Command) error {
 		return err
 	}
 	o.DeleteOptions = o.DeleteFlags.ToOptions(dynamicClient, o.IOStreams)
+	if err := o.DeleteOptions.FilenameOptions.Validate(); err != nil {
+		return err
+	}
+	if o.DeleteOptions.FilenameOptions.IsSourceEmpty() {
+		return fmt.Errorf("must specify one of -f and -k")
+	}
 
 	o.OpenAPISchema, _ = f.OpenAPISchema()
 	o.Validator, err = f.Validator(cmdutil.GetFlagBool(cmd, "validate"))
